@@ -43,3 +43,18 @@ class User(db.Model):
         nullable=False
     )
 
+    @classmethod
+    def register(cls, username, email, first_name, last_name, pwd):
+        '''Register user with hashed password and return user instance'''
+
+        hashed = bcrypt.generate_password_hash(pwd).decode('utf8')
+
+        return cls(
+            username=username,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            pwd=hashed,
+        )
+
+

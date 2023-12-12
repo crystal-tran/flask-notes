@@ -4,8 +4,7 @@ from flask import Flask, render_template, redirect, session, flash
 from flask_debugtoolbar import DebugToolbarExtension
 
 from models import User, connect_db, db
-# import forms here
-
+from forms import RegisterForm
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
     "DATABASE_URL", "postgresql:///flask_notes")
@@ -16,6 +15,7 @@ connect_db(app)
 db.create_all()
 
 toolbar = DebugToolbarExtension(app)
+app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 
 @app.get('/')
 def homepage():
@@ -24,3 +24,37 @@ def homepage():
     return redirect("/register")
 
 # create routes for get & post/register
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    '''Register user upon form submission & show registration form'''
+
+    form = RegisterForm()
+
+    if form.validate_on_submit():
+        input_data = {k: v for k, v in form.data.items() if k != "csrf_token"}
+
+        new_user = User.register(**input_data)
+
+        db.session.add(new_user)
+        db.session.commit()
+
+        session['username'] = new_user.username
+
+        flash('User registered!')
+
+        return redirect('/users')
+
+    else:
+        return render_template('register.html', form=form)
+
+@app.route('/users/<username>')
+def show_users(username):
+    '''Show data for a logged in user'''
+
+    user = User.query.get_or_404(username)
+
+    render_template(
+        'users.html',
+        user=user
+    )
