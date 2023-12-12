@@ -1,0 +1,26 @@
+import os
+
+from flask import Flask, render_template, redirect, session, flash
+from flask_debugtoolbar import DebugToolbarExtension
+
+from models import User, connect_db, db
+# import forms here
+
+app = Flask(__name__)
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
+    "DATABASE_URL", "postgresql:///flask_notes")
+app.config["SQLALCHEMY_ECHO"] = True
+app.config["SECRET_KEY"] = "abc123"
+
+connect_db(app)
+db.create_all()
+
+toolbar = DebugToolbarExtension(app)
+
+@app.get('/')
+def homepage():
+    """Redirect user to register page"""
+
+    return redirect("/register")
+
+# create routes for get & post/register
