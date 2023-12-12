@@ -4,7 +4,8 @@ from flask import Flask, render_template, redirect, session, flash
 from flask_debugtoolbar import DebugToolbarExtension
 
 from models import User, connect_db, db
-from forms import RegisterForm
+from forms import RegisterForm, LoginForm
+
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
     "DATABASE_URL", "postgresql:///flask_notes")
@@ -43,10 +44,34 @@ def register():
 
         flash('User registered!')
 
-        return redirect('/users')
+        return redirect(f'/users/<{new_user.username}>')
 
     else:
         return render_template('register.html', form=form)
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    '''Show form to login a user and process login form'''
+
+    form = LoginForm()
+
+    if form.validate_on_submit():
+        login_data = {k: v for k, v in form.data.items() if k != "csrf_token"}
+
+        user = User.authenticate(**login_data)
+
+        if user:
+            session['username'] = user.username
+
+            return redirect(f"/users/<{user.username}>")
+        else:
+            form.username.errors = ["Bad username/password"]
+            # TODO: Question to ask duriong code review.
+
+    return render_template('login.html', form=form)
+
+
 
 @app.route('/users/<username>')
 def show_users(username):
