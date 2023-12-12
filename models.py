@@ -12,6 +12,7 @@ def connect_db(app):
     db.app = app
     db.init_app(app)
 
+
 class User(db.Model):
     """Site user."""
 
@@ -45,21 +46,31 @@ class User(db.Model):
 
     @classmethod
     def register(cls, username, email, first_name, last_name, password):
-        '''Register user with hashed password and return user instance'''
+        '''Register user with hashed password and return user instance
+        if username and email is unique.
 
-        hashed = bcrypt.generate_password_hash(password).decode('utf8')
+        Returns False if username and email is not unqiue'''
 
-        return cls(
-            username=username,
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-            password=hashed,
-        )
+        user_check = cls.query.filter_by(username=username).one_or_none()
+        email_check = cls.query.filter_by(email=email).one_or_none()
+
+        if not user_check and not email_check:
+            hashed = bcrypt.generate_password_hash(password).decode('utf8')
+
+            return cls(
+                username=username,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                password=hashed,
+            )
+
+        else:
+            return False
 
     @classmethod
     def authenticate(cls, username, password):
-        '''Validate that user exists and password is hash compatible
+        '''Validate that user exists and password is valid
 
         Return user if valid; else return False.
         '''

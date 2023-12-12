@@ -32,7 +32,6 @@ class RegisterForm(FlaskForm):
     )
 
 
-
 class LoginForm(FlaskForm):
     '''Form for logging in a user.'''
 
@@ -46,5 +45,6 @@ class LoginForm(FlaskForm):
         validators=[InputRequired(), DataRequired()],
     )
 
+
 class CSRFProtectForm(FlaskForm):
-    """Form just for CSRF Protection"""
+    """Form just for CSRF Protection."""

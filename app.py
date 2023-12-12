@@ -20,15 +20,14 @@ app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 
 @app.get('/')
 def homepage():
-    """Redirect user to register page"""
+    """Redirect user to register page."""
 
     return redirect("/register")
 
-# create routes for get & post/register
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    '''Register user upon form submission & show registration form'''
+    '''Show registration form and register user upon form submission'''
 
     form = RegisterForm()
 
@@ -37,17 +36,19 @@ def register():
 
         new_user = User.register(**input_data)
 
-        db.session.add(new_user)
-        db.session.commit()
+        if new_user:
 
-        session['username'] = new_user.username
+            db.session.add(new_user)
+            db.session.commit()
+            session['username'] = new_user.username
 
-        flash('User registered!')
+            flash('User registered!')
+            return redirect(f'/users/{new_user.username}')
 
-        return redirect(f'/users/{new_user.username}')
+        else:
+            form.username.errors = ["Username/email already exists"]
 
-    else:
-        return render_template('register.html', form=form)
+    return render_template('register.html', form=form)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -75,7 +76,8 @@ def login():
 
 @app.get('/users/<username>')
 def show_users(username):
-    '''Show data for a logged in user'''
+    '''Show data for logged in user or redirects if username
+    does not match username on page'''
 
     user = User.query.get_or_404(username)
 
@@ -89,7 +91,7 @@ def show_users(username):
 
         logged_in_username = session['username']
 
-        flash('Unable to view other info for other users!')
+        flash('Unable to view info for other users!')
         return redirect(f"/users/{logged_in_username}")
 
     form = CSRFProtectForm()
@@ -100,3 +102,14 @@ def show_users(username):
         form=form,
     )
 
+
+@app.post('/logout')
+def logout():
+    '''Logout user and redirects to homepage'''
+
+    form=CSRFProtectForm()
+
+    if form.validate_on_submit():
+        session.pop('username', None)
+
+    return redirect('/')
