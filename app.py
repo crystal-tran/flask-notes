@@ -4,7 +4,7 @@ from flask import Flask, render_template, redirect, session, flash
 from flask_debugtoolbar import DebugToolbarExtension
 
 from models import User, connect_db, db
-from forms import RegisterForm, LoginForm
+from forms import RegisterForm, LoginForm, CSRFProtectForm
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
@@ -44,7 +44,7 @@ def register():
 
         flash('User registered!')
 
-        return redirect(f'/users/<{new_user.username}>')
+        return redirect(f'/users/{new_user.username}')
 
     else:
         return render_template('register.html', form=form)
@@ -64,7 +64,7 @@ def login():
         if user:
             session['username'] = user.username
 
-            return redirect(f"/users/<{user.username}>")
+            return redirect(f"/users/{user.username}")
         else:
             form.username.errors = ["Bad username/password"]
             # TODO: Question to ask duriong code review.
@@ -73,13 +73,30 @@ def login():
 
 
 
-@app.route('/users/<username>')
+@app.get('/users/<username>')
 def show_users(username):
     '''Show data for a logged in user'''
 
     user = User.query.get_or_404(username)
 
-    render_template(
+    if 'username' not in session:
+
+        flash('Log in is required for user info.')
+        return redirect('/login')
+
+    # make sure user logged in matches page being accessed
+    elif session['username'] != user.username:
+
+        logged_in_username = session['username']
+
+        flash('Unable to view other info for other users!')
+        return redirect(f"/users/{logged_in_username}")
+
+    form = CSRFProtectForm()
+
+    return render_template(
         'users.html',
-        user=user
+        user=user,
+        form=form,
     )
+

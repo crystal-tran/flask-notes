@@ -2,6 +2,11 @@
 
 {% block content %}
 
+<div>
+  {% for msg in get_flashed_messages() %}
+  <p>{{ msg }}</p>
+  {% endfor %}
+</div>
 
 <h1>User Registration</h1>
 
