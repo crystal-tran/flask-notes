@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div>
+  {% for msg in get_flashed_messages() %}
+  <p>{{ msg }}</p>
+  {% endfor %}
+</div>
+
+<h1>Add a Note!</h1>
+
+<form method="POST">
+  {% include '_form.html' %}
+
+  <button class="btn btn-primary" type="submit">Submit</button>
+  <a href="/users/{{ user.username }}" class="btn btn-secondary">Cancel</a>
+</form>
+<br>
+
+{% endblock %}

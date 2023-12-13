@@ -20,4 +20,20 @@
   <button type="submit" class="btn btn-primary">Logout</button>
 </form>
 
+
+<a href="/users/{{ user.username }}/notes/add" class="btn btn-secondary">Add a Note</a>
+<hr>
+
+<h2>User Notes</h2>
+<ul>
+
+  {% for note in notes %}
+
+      <li>
+        <a href="/notes/{{ note.id }}/update">{{ note.title }}</a>
+      </li>
+
+    {% endfor %}
+</ul>
 {% endblock %}
+
