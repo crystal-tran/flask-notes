@@ -2,6 +2,7 @@ import os
 
 from flask import Flask, render_template, redirect, session, flash
 from flask_debugtoolbar import DebugToolbarExtension
+from werkzeug.exceptions import Unauthorized
 
 from models import User, connect_db, db
 from forms import RegisterForm, LoginForm, CSRFProtectForm
@@ -57,8 +58,6 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     '''Show form to login a user and process login form'''
-    # have login route a protected route, available for users not logged in
-    # if user is logged in, redirect to user page
 
     if USERNAME_KEY in session:
 
@@ -85,29 +84,13 @@ def login():
 @app.get('/users/<username>')
 def show_users(username):
     '''Show data for logged in user or redirects if username
-    does not match username on page'''
+    does not match username on page
+    Raise unauthorized error if not logged in or invalid username'''
 
-# security issue, we have an information leak. We can username
-# make this a protected route, authorize user first before checking database
+    if 'username' not in session or session[USERNAME_KEY] != username:
+        raise Unauthorized
 
-#TODO: raise an authorized error, refactor first check to be unauthorized
-
-
-# TODO: move query past the authorization check
     user = User.query.get_or_404(username)
-
-    if 'username' not in session:
-
-        flash('Log in is required for user info.')
-        return redirect('/login')
-
-    # make sure user logged in matches page being accessed
-    elif session[USERNAME_KEY] != user.username:
-
-        logged_in_username = session[USERNAME_KEY]
-
-        flash('Unable to view info for other users!')
-        return redirect(f"/users/{logged_in_username}")
 
     form = CSRFProtectForm()
 
@@ -120,12 +103,14 @@ def show_users(username):
 
 @app.post('/logout')
 def logout():
-    '''Logout user and redirects to homepage'''
+    '''Logout user and redirects to homepage
+    Raise unauthorized error if invalid csrf token'''
 
-    form=CSRFProtectForm()
+    form = CSRFProtectForm()
 
     if form.validate_on_submit():
         session.pop(USERNAME_KEY, None)
-        # TODO: if it fails CSRF protection, throw an unauthorized error
+        return redirect('/')
 
-    return redirect('/')
+    else:
+        raise Unauthorized
