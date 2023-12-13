@@ -6,6 +6,9 @@ from wtforms.validators import InputRequired, DataRequired, Email
 class RegisterForm(FlaskForm):
     '''Form for user registration'''
 
+# most important data should be higher up. Move username, password higher up
+# TODO: bump username, password, email up
+# TODO: enforce constraints in the front-end, add length constraints(min, max)
     first_name = StringField(
         'First Name:',
         validators=[InputRequired(), DataRequired()]
@@ -18,6 +21,7 @@ class RegisterForm(FlaskForm):
 
     email = StringField(
         'Email:',
+        # TODO: remove datarequired and inputrquired. Redundant?
         validators=[InputRequired(), DataRequired(), Email()],
     )
 

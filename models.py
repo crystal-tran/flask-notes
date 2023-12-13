@@ -24,7 +24,7 @@ class User(db.Model):
     )
 
     password = db.Column(
-        db.String(100),
+        db.Text,
         nullable=False,
     )
 
@@ -35,38 +35,41 @@ class User(db.Model):
     )
 
     first_name = db.Column(
-        db.String(30),
+        db.String(100),
         nullable=False
     )
 
     last_name = db.Column(
-        db.String(30),
+        db.String(100),
         nullable=False
     )
 
     @classmethod
-    def register(cls, username, email, first_name, last_name, password):
-        '''Register user with hashed password and return user instance
-        if username and email is unique.
-
-        Returns False if username and email is not unqiue'''
+    def validate_username_and_email(cls, username, email):
+        '''Checks if username and email is unique. Returns True/False'''
 
         user_check = cls.query.filter_by(username=username).one_or_none()
         email_check = cls.query.filter_by(email=email).one_or_none()
 
-        if not user_check and not email_check:
-            hashed = bcrypt.generate_password_hash(password).decode('utf8')
+        return user_check and email_check
 
-            return cls(
-                username=username,
-                email=email,
-                first_name=first_name,
-                last_name=last_name,
-                password=hashed,
-            )
+    @classmethod
+    def register(cls, username, email, first_name, last_name, password):
+        '''Register user with hashed password and return user instance'''
 
-        else:
-            return False
+        hashed = bcrypt.generate_password_hash(password).decode('utf8')
+
+        user = cls(
+            username=username,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            password=hashed,
+        )
+
+        db.session.add(user)
+
+        return user
 
     @classmethod
     def authenticate(cls, username, password):

@@ -18,6 +18,8 @@ db.create_all()
 toolbar = DebugToolbarExtension(app)
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 
+USERNAME_KEY = 'username'
+
 @app.get('/')
 def homepage():
     """Redirect user to register page."""
@@ -34,13 +36,14 @@ def register():
     if form.validate_on_submit():
         input_data = {k: v for k, v in form.data.items() if k != "csrf_token"}
 
-        new_user = User.register(**input_data)
+        username_email_is_valid = User.validate_username_and_email(
+            input_data['username'],input_data['email'])
 
-        if new_user:
+        if username_email_is_valid:
+            new_user = User.register(**input_data)
 
-            db.session.add(new_user)
             db.session.commit()
-            session['username'] = new_user.username
+            session[USERNAME_KEY] = new_user.username
 
             flash('User registered!')
             return redirect(f'/users/{new_user.username}')
@@ -54,6 +57,13 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     '''Show form to login a user and process login form'''
+    # have login route a protected route, available for users not logged in
+    # if user is logged in, redirect to user page
+
+    if USERNAME_KEY in session:
+
+        flash("You're already logged in!.")
+        return redirect(f'/users/{session[USERNAME_KEY]}')
 
     form = LoginForm()
 
@@ -63,15 +73,13 @@ def login():
         user = User.authenticate(**login_data)
 
         if user:
-            session['username'] = user.username
+            session[USERNAME_KEY] = user.username
 
             return redirect(f"/users/{user.username}")
         else:
             form.username.errors = ["Bad username/password"]
-            # TODO: Question to ask duriong code review.
 
     return render_template('login.html', form=form)
-
 
 
 @app.get('/users/<username>')
@@ -79,6 +87,13 @@ def show_users(username):
     '''Show data for logged in user or redirects if username
     does not match username on page'''
 
+# security issue, we have an information leak. We can username
+# make this a protected route, authorize user first before checking database
+
+#TODO: raise an authorized error, refactor first check to be unauthorized
+
+
+# TODO: move query past the authorization check
     user = User.query.get_or_404(username)
 
     if 'username' not in session:
@@ -87,9 +102,9 @@ def show_users(username):
         return redirect('/login')
 
     # make sure user logged in matches page being accessed
-    elif session['username'] != user.username:
+    elif session[USERNAME_KEY] != user.username:
 
-        logged_in_username = session['username']
+        logged_in_username = session[USERNAME_KEY]
 
         flash('Unable to view info for other users!')
         return redirect(f"/users/{logged_in_username}")
@@ -110,6 +125,7 @@ def logout():
     form=CSRFProtectForm()
 
     if form.validate_on_submit():
-        session.pop('username', None)
+        session.pop(USERNAME_KEY, None)
+        # TODO: if it fails CSRF protection, throw an unauthorized error
 
     return redirect('/')
